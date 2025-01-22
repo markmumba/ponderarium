@@ -1,0 +1,39 @@
+# Byte-compiled / compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+.env/
+*.venv
+Pipfile
+Pipfile.lock
+
+# Django specific
+db.sqlite3  # Ignore SQLite database file
+*.log  # Ignore log files
+media/  # Ignore uploaded media files
+staticfiles/  # Ignore collected static files (run `collectstatic` before deployment)
+
+# Environment variables and secrets
+.env
+config/settings/local.py  # If you have environment-specific settings
+
+# Ignore editor and system files
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Ignore migrations (optional)
+**/migrations/**  # Ignore migrations (except `__init__.py`)
+
+# Ignore compiled dependencies
+*.egg-info/
+dist/
+build/
+
+# Docker
+docker-compose.override.yml
