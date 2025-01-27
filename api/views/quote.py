@@ -1,6 +1,6 @@
 
 from ..models import Quote
-from ..serializers import QuoteSerializer, CommentSerializer, SourceSerializer
+from ..serializers import QuoteSerializer, CommentSerializer,QuoteListSerializer
 
 from rest_framework import viewsets, status
 from rest_framework.response import Response
@@ -19,11 +19,17 @@ class QuoteViewSet(viewsets.ModelViewSet):
         filters.SearchFilter,  
         filters.OrderingFilter  
     ]
-    search_fields = ['name']  
-    ordering_fields = ['name', 'created_at']  
-    ordering = ['name']  
-    filterset_fields = ['name']
+    search_fields = ['content']  
+    ordering_fields = ['content', 'created_at']  
+    ordering = ['content']  
+    filterset_fields = ['content']
 
+    def get_serializer_class(self):
+        if self.action == "list":
+            return QuoteListSerializer
+        return QuoteSerializer
+
+    
     @action(detail=True, methods=['get', 'post'])
     def comments(self, request, pk=None):
 
@@ -43,24 +49,5 @@ class QuoteViewSet(viewsets.ModelViewSet):
 
     
 
-    @action(detail=True, methods=['post'])
-    def source(self, request, pk=None):
-    
-        quote = self.get_object()
 
-        if request.method == 'GET':
-            serializer = SourceSerializer(quote.source)  
-            return Response(serializer.data)
 
-        elif request.method == 'POST':
-            if quote.source:  
-                return Response({"error": "This quote already has a source."}, status=status.HTTP_400_BAD_REQUEST)
-
-            serializer = SourceSerializer(data=request.data)
-            if serializer.is_valid():
-                source = serializer.save()  
-                quote.source = source  
-                quote.save()  
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
