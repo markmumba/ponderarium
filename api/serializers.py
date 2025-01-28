@@ -76,13 +76,11 @@ class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
         fields = "__all__"
-        # Ensure 'quote' is not required in the request
         read_only_fields = ['quote']
 
     def create(self, validated_data):
         """Create a comment without manually fetching quote_id"""
         user = validated_data.pop("user_id")
-        # This is passed from perform_create()
         quote = validated_data.pop("quote")
 
         comment = Comment.objects.create(
@@ -104,6 +102,7 @@ class UpvoteSerializer(serializers.ModelSerializer):
     )
     upvotes_count = serializers.SerializerMethodField()
 
+
     class Meta:
         model = Upvote
         fields = ['id', 'user', 'user_id', 'comment', 'upvotes_count']
@@ -112,20 +111,16 @@ class UpvoteSerializer(serializers.ModelSerializer):
     def get_upvotes_count(self, obj):
         return Upvote.objects.filter(comment=obj.comment).count()
 
-    def create(self, validated_data):
-        user = validated_data.pop('user_id')
-        comment = validated_data['comment']
-        
-        existing_upvote = Upvote.objects.filter(
-            user=user,
-            comment=comment
-        ).first()
-        
-        if existing_upvote:
-            raise serializers.ValidationError("User has already upvoted this comment")
-            
-        upvote = Upvote.objects.create(
-            user=user,
-            comment=comment
-        )
-        return upvote
+def create(self, validated_data):
+    user = validated_data.pop('user_id')  
+    comment = self.context['comment']  
+
+    user_instance = User.objects.get(id=user.id)  
+
+    existing_upvote = Upvote.objects.filter(user=user_instance, comment=comment).first()
+    if existing_upvote:
+        raise serializers.ValidationError("User has already upvoted this comment")
+
+    # Create the upvote
+    upvote = Upvote.objects.create(user=user_instance, comment=comment)
+    return upvote
