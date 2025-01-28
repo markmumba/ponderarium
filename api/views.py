@@ -16,24 +16,53 @@ from rest_framework.decorators import action
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
 
+from django.shortcuts import get_object_or_404
+from django.db.models import Count
+from rest_framework import viewsets, status, filters
+from rest_framework.decorators import action, api_view
+from rest_framework.response import Response
+from django_filters.rest_framework import DjangoFilterBackend
 
-class UserViewSet (viewsets.ModelViewSet):
+from .models import User, Quote, Source, Theme, Comment, Upvote
+from .serializers import (
+    UserSerializer, QuoteSerializer, QuoteListSerializer,
+    CommentSerializer, CommentListSerializer, UpvoteSerializer, UpvoteListSerializer,
+    SourceSerializer, ThemeSerializer
+)
+
+
+class UserViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint for managing users.
+
+    - List all users (GET /users/)
+    - Create a new user (POST /users/)
+    - Retrieve a specific user (GET /users/{id}/)
+    - Update a user (PUT /users/{id}/)
+    - Partially update a user (PATCH /users/{id}/)
+    - Delete a user (DELETE /users/{id}/)
+    """
 
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
     filter_backends = [
-        DjangoFilterBackend,  # For exact matching filters
-        filters.SearchFilter,  # For text search
-        filters.OrderingFilter  # For sorting
+        DjangoFilterBackend,
+        filters.SearchFilter,
+        filters.OrderingFilter
     ]
     search_fields = ['username']
     ordering_fields = ['username', 'created_at']
     ordering = ['username']
     filterset_fields = ['username']
 
-    @action(['get'], detail=True)
+    @action(detail=True, methods=['get'])
     def get_all_quotes(self, request, pk=None):
+        """
+        Retrieve all quotes in the system.
+
+        Accessible at GET /users/{id}/get_all_quotes/
+        """
         try:
             user = self.get_object()
             quotes = Quote.objects.all()
@@ -48,6 +77,16 @@ class UserViewSet (viewsets.ModelViewSet):
 
 
 class QuoteViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint for managing quotes.
+
+    - List all quotes (GET /quotes/)
+    - Create a new quote (POST /quotes/)
+    - Retrieve a specific quote (GET /quotes/{id}/)
+    - Update a quote (PUT /quotes/{id}/)
+    - Partially update a quote (PATCH /quotes/{id}/)
+    - Delete a quote (DELETE /quotes/{id}/)
+    """
 
     queryset = Quote.objects.all()
     serializer_class = QuoteSerializer
@@ -63,13 +102,19 @@ class QuoteViewSet(viewsets.ModelViewSet):
     filterset_fields = ['content']
 
     def get_serializer_class(self):
+        """Return different serializers based on action (list or detail)."""
         if self.action == "list":
             return QuoteListSerializer
         return QuoteSerializer
 
     @action(detail=True, methods=['get', 'post'])
     def comments(self, request, pk=None):
+        """
+        Retrieve or add comments to a quote.
 
+        - GET /quotes/{id}/comments/ → List all comments on the quote
+        - POST /quotes/{id}/comments/ → Add a new comment to the quote
+        """
         quote = self.get_object()
 
         if request.method == 'GET':
@@ -87,6 +132,14 @@ class QuoteViewSet(viewsets.ModelViewSet):
 
 @api_view(['GET', 'PUT', 'PATCH', 'DELETE'])
 def source_detail(request, pk):
+    """
+    API endpoint for managing sources.
+
+    - GET /sources/{id}/ → Retrieve source details
+    - PUT /sources/{id}/ → Fully update a source
+    - PATCH /sources/{id}/ → Partially update a source
+    - DELETE /sources/{id}/ → Delete a source and remove associations
+    """
     source = get_object_or_404(Source, pk=pk)
 
     if request.method == 'GET':
@@ -109,31 +162,29 @@ def source_detail(request, pk):
             quote.save()
 
         source.delete()
-        return Response({"message": "Source delete and association removed from related quotes"}, status=status.HTTP_204_NO_CONTENT)
+        return Response({"message": "Source deleted, and associations removed from related quotes"},
+                        status=status.HTTP_204_NO_CONTENT)
 
 
 class ThemeViewSet(viewsets.ModelViewSet):
     """
-    ViewSet for managing Theme objects.
+    API endpoint for managing themes.
 
-    Provides CRUD operations and additional functionality for themes:
     - List all themes (GET /themes/)
-    - Create new theme (POST /themes/)
-    - Retrieve single theme (GET /themes/{id}/)
-    - Update theme (PUT /themes/{id}/)
-    - Partially update theme (PATCH /themes/{id}/)
-    - Delete theme (DELETE /themes/{id}/)
+    - Create a new theme (POST /themes/)
+    - Retrieve a specific theme (GET /themes/{id}/)
+    - Update a theme (PUT /themes/{id}/)
+    - Partially update a theme (PATCH /themes/{id}/)
+    - Delete a theme (DELETE /themes/{id}/)
     """
 
-    # Basic configuration
     queryset = Theme.objects.all()
     serializer_class = ThemeSerializer
 
-    # Add filtering and searching capabilities
     filter_backends = [
-        DjangoFilterBackend,  # For exact matching filters
-        filters.SearchFilter,  # For text search
-        filters.OrderingFilter  # For sorting
+        DjangoFilterBackend,
+        filters.SearchFilter,
+        filters.OrderingFilter
     ]
     search_fields = ['name']
     ordering_fields = ['name', 'created_at']
@@ -143,7 +194,8 @@ class ThemeViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'])
     def quotes(self, request, pk=None):
         """
-        Custom endpoint to get quotes for a specific theme.
+        Retrieve all quotes under a specific theme.
+
         Accessible at GET /themes/{id}/quotes/
         """
         try:
@@ -160,11 +212,11 @@ class ThemeViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def popular(self, request):
         """
-        Custom endpoint to get popular themes.
+        Retrieve the most popular themes based on the number of quotes.
+
         Accessible at GET /themes/popular/
         """
         try:
-            # Get themes with the most quotes
             popular_themes = Theme.objects.annotate(
                 quote_count=Count('quotes')
             ).order_by('-quote_count')[:5]
@@ -180,47 +232,59 @@ class ThemeViewSet(viewsets.ModelViewSet):
 
 class CommentViewSet(viewsets.ModelViewSet):
     """
-    Handles Comments for a specific quote 
-    URL structure: /api/v1/quotes/{quote_id}/comments/
+    API endpoint for managing comments.
+
+    - List all comments (GET /comments/)
+    - Create a new comment (POST /comments/)
+    - Retrieve a specific comment (GET /comments/{id}/)
+    - Update a comment (PUT /comments/{id}/)
+    - Partially update a comment (PATCH /comments/{id}/)
+    - Delete a comment (DELETE /comments/{id}/)
     """
 
     serializer_class = CommentSerializer
-    queryset=Comment.objects.all()
+    queryset = Comment.objects.all()
 
     def get_serializer_class(self):
-        print(f"Current action: {self.action} ")
+        """Return different serializers based on action."""
         if self.action == "list":
             return CommentListSerializer
         return CommentSerializer
 
-
     def get_object(self):
+        """Retrieve a specific comment by ID."""
         comment_id = self.kwargs["pk"]
         return get_object_or_404(Comment, id=comment_id)
 
     def perform_create(self, serializer):
-        """Automatically attach quote to the comment when saving"""
+        """Automatically attach a quote to the comment when saving."""
         quote_id = self.kwargs.get("quote_id")
         quote = get_object_or_404(Quote, id=quote_id)
-
         serializer.save(quote=quote)
 
 
 class UpvoteViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint for managing upvotes on comments.
+
+    - List all upvotes on a comment (GET /comments/{comment_id}/upvotes/)
+    - Create a new upvote (POST /comments/{comment_id}/upvotes/)
+    """
+
     serializer_class = UpvoteSerializer
 
     def get_serializer_class(self):
+        """Return different serializers based on action."""
         if self.action == 'list':
             return UpvoteListSerializer
         return UpvoteSerializer
-    
+
     def get_queryset(self):
+        """Retrieve all upvotes for a specific comment."""
         return Upvote.objects.filter(comment=self.kwargs['comment_pk'])
-    
+
     def perform_create(self, serializer):
-        comment = Comment.objects.get(pk=self.kwargs['comment_pk'])
+        """Attach a comment to an upvote when saving."""
+        comment = get_object_or_404(Comment, pk=self.kwargs['comment_pk'])
         user_id = self.request.data.get('user_id')
-        serializer.save(
-            comment=comment,
-            user_id=user_id
-        )
+        serializer.save(comment=comment, user_id=user_id)
