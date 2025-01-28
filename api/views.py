@@ -2,7 +2,7 @@ from .models import User, Quote, Theme, Comment, Source, Upvote
 from .serializers import (UserSerializer, QuoteSerializer,
                           ThemeSerializer, SourceSerializer,
                           QuoteListSerializer, CommentSerializer, CommentListSerializer,
-                          UpvoteSerializer
+                          UpvoteSerializer,UpvoteListSerializer
                           )
 
 
@@ -208,9 +208,13 @@ class CommentViewSet(viewsets.ModelViewSet):
 
 class UpvoteViewSet(viewsets.ModelViewSet):
     serializer_class = UpvoteSerializer
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return UpvoteListSerializer
+        return UpvoteSerializer
     
     def get_queryset(self):
-        # Changed from comment_id to comment
         return Upvote.objects.filter(comment=self.kwargs['comment_pk'])
     
     def perform_create(self, serializer):

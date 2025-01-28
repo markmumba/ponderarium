@@ -111,16 +111,26 @@ class UpvoteSerializer(serializers.ModelSerializer):
     def get_upvotes_count(self, obj):
         return Upvote.objects.filter(comment=obj.comment).count()
 
-def create(self, validated_data):
-    user = validated_data.pop('user_id')  
-    comment = self.context['comment']  
+    def create(self, validated_data):
+        user = validated_data.pop('user_id')  
+        comment = self.context['comment']  
 
-    user_instance = User.objects.get(id=user.id)  
+        user_instance = User.objects.get(id=user.id)  
 
-    existing_upvote = Upvote.objects.filter(user=user_instance, comment=comment).first()
-    if existing_upvote:
-        raise serializers.ValidationError("User has already upvoted this comment")
+        existing_upvote = Upvote.objects.filter(user=user_instance, comment=comment).first()
+        if existing_upvote:
+            raise serializers.ValidationError("User has already upvoted this comment")
 
-    # Create the upvote
-    upvote = Upvote.objects.create(user=user_instance, comment=comment)
-    return upvote
+        # Create the upvote
+        upvote = Upvote.objects.create(user=user_instance, comment=comment)
+        return upvote
+
+class UpvoteListSerializer(serializers.ModelSerializer):
+    upvotes_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Upvote
+        fields = ['id', 'upvotes_count']
+
+    def get_upvotes_count(self, obj):
+        return Upvote.objects.filter(comment=obj.comment).count()
