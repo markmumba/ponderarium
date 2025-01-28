@@ -160,3 +160,9 @@ REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Ponderarium',
+    'DESCRIPTION': 'A web application that serves as a curated repository for profound quotes, monologues, and philosophical ideas derived from notable thinkers, fictional characters, movies, and literature.',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+}
