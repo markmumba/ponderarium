@@ -90,11 +90,11 @@ class Upvote(models.Model):
     """Tracks users who upvote quotes"""
     user = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="upvotes")
-    quote = models.ForeignKey(
-        Quote, on_delete=models.CASCADE, related_name="upvotes")
+    comment = models.ForeignKey(
+        Comment, on_delete=models.CASCADE, related_name="upvotes")
 
     class Meta:
-        unique_together = ("user", "quote")  # Prevent duplicate upvotes
+        unique_together = ("user", "comment")  # Prevent duplicate upvotes
 
     def __str__(self):
-        return f"{self.user.username} upvoted {self.quote}"
+        return f"{self.user.username} upvoted {self.comment}"

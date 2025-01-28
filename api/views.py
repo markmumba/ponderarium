@@ -74,7 +74,7 @@ class QuoteViewSet(viewsets.ModelViewSet):
 
         if request.method == 'GET':
             comments = quote.comments.all()
-            serializer = CommentSerializer(comments, many=True)
+            serializer = CommentListSerializer(comments, many=True)
             return Response(serializer.data)
 
         elif request.method == 'POST':
@@ -185,6 +185,7 @@ class CommentViewSet(viewsets.ModelViewSet):
     """
 
     serializer_class = CommentSerializer
+    queryset=Comment.objects.all()
 
     def get_serializer_class(self):
         print(f"Current action: {self.action} ")
@@ -192,9 +193,6 @@ class CommentViewSet(viewsets.ModelViewSet):
             return CommentListSerializer
         return CommentSerializer
 
-    def get_queryset(self):
-        quote_id = self.kwargs["quote_id"]
-        return Comment.objects.filter(quote_id=quote_id)
 
     def get_object(self):
         comment_id = self.kwargs["pk"]
@@ -209,6 +207,16 @@ class CommentViewSet(viewsets.ModelViewSet):
 
 
 class UpvoteViewSet(viewsets.ModelViewSet):
-
-    queryset = Upvote.objects.all()
     serializer_class = UpvoteSerializer
+    
+    def get_queryset(self):
+        # Changed from comment_id to comment
+        return Upvote.objects.filter(comment=self.kwargs['comment_pk'])
+    
+    def perform_create(self, serializer):
+        comment = Comment.objects.get(pk=self.kwargs['comment_pk'])
+        user_id = self.request.data.get('user_id')
+        serializer.save(
+            comment=comment,
+            user_id=user_id
+        )
