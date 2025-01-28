@@ -66,13 +66,47 @@ class QuoteListSerializer(serializers.ModelSerializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
+
+    user = UserSerializer(read_only=True)
+    user_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(), write_only=True
+    )
+    quote = serializers.PrimaryKeyRelatedField(read_only=True)  # Only returned in response
+
     class Meta:
         model = Comment
         fields = "__all__"
-        read_only_fields = ['quote']
+        read_only_fields = ['quote']  # Ensure 'quote' is not required in the request
 
+    def create(self, validated_data):
+        """Create a comment without manually fetching quote_id"""
+        user = validated_data.pop("user_id")
+        quote = validated_data.pop("quote")  # This is passed from perform_create()
+
+        comment = Comment.objects.create(**validated_data, user=user, quote=quote)
+        return comment
+
+class CommentListSerializer(serializers.ModelSerializer) :
+    class Meta:
+        model = Comment
+        fields = ["id","content"]
 
 class UpvoteSerializer(serializers.ModelSerializer):
+
+    user_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(),write_only=True
+    )
+
+    quote_id = serializers.PrimaryKeyRelatedField(
+        queryset=Quote.objects.all(),write_only=True
+    )
+
+    Upvotes_count = serializers.SerializerMethodField()
+
     class Meta:
         model = Upvote
         fields = "__all__"
+
+    def get_upvotes_count(self,obj):
+        return obj.upvotes.count()
+
